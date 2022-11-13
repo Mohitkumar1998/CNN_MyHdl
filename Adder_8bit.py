@@ -63,16 +63,20 @@ def CarryLookAheadAdder(a, b, c0, c8, sum8, clk):
             elif (p7 ^ c7) and o_p == 1:
                 sum8.next = intbv(intbv(127)).signed()
             else:
-                sum8.next = intbv(intbv(str(int(sl[7])) + "_" + str(int(sl[6])) + "_" + str(int(sl[5])) + "_" + str(int(sl[4])) + "_" + str(int(sl[3])) + "_" + str(int(sl[2])) + "_" + str(int(sl[1])) + "_" + str(int(sl[0])))[8:]).signed()
+                sum8.next = intbv(intbv(
+                    str(int(sl[7])) + "_" + str(int(sl[6])) + "_" + str(int(sl[5])) + "_" + str(int(sl[4])) + "_" + str(
+                        int(sl[3])) + "_" + str(int(sl[2])) + "_" + str(int(sl[1])) + "_" + str(int(sl[0])))[
+                                  8:]).signed()
         else:
-            sum8.next = intbv(intbv(str(int(sl[7])) + "_" + str(int(sl[6])) + "_" + str(int(sl[5])) + "_" + str(int(sl[4])) + "_" + str(int(sl[3])) + "_" + str(int(sl[2])) + "_" + str(int(sl[1])) + "_" + str(int(sl[0])))[8:]).signed()
+            sum8.next = intbv(intbv(
+                str(int(sl[7])) + "_" + str(int(sl[6])) + "_" + str(int(sl[5])) + "_" + str(int(sl[4])) + "_" + str(
+                    int(sl[3])) + "_" + str(int(sl[2])) + "_" + str(int(sl[1])) + "_" + str(int(sl[0])))[8:]).signed()
 
     return cl_adder
 
 
 @block
 def test_adder():
-
     clk = Signal(bool(0))
     a, b, sum8 = [Signal(intbv(0)[8:].signed()) for i in range(3)]
     c0, c8 = [Signal(intbv(0)[1:]) for i in range(2)]
@@ -88,11 +92,15 @@ def test_adder():
         b.next = random.randint(-128, 127)
         print(str(int(a)) + " + " + str(int(b)) + " = " + str(int(sum8)) + " , " + str(int(c8)))
         if int(a + b) > 127:
-            assert int(sum8) == 127, "a " + str(int(a)) + " + b " + str(int(b)) + " = " + str(a+b) + ", is " + str(int(sum8))
+            assert int(sum8) == 127, "a " + str(int(a)) + " + b " + str(int(b)) + " = " + str(a + b) + ", is " + str(
+                int(sum8))
         elif int(a + b) < -128:
-            assert int(sum8) == -128, "a " + str(int(a)) + " + b " + str(int(b)) + " = " + str(a+b) + ", is " + str(int(sum8))
+            assert int(sum8) == -128, "a " + str(int(a)) + " + b " + str(int(b)) + " = " + str(a + b) + ", is " + str(
+                int(sum8))
         elif 128 > int(a + b) > -129:
-            assert int(sum8) == int(a + b), "a " + str(int(a)) + " + b " + str(int(b)) + " = " + str(a+b) + ", is " + str(int(sum8))
+            assert int(sum8) == int(a + b), "a " + str(int(a)) + " + b " + str(int(b)) + " = " + str(
+                a + b) + ", is " + str(int(sum8))
+
     return dff_inst, clkgen, stimulus
 
 
@@ -100,5 +108,6 @@ def simulate(timesteps):
     simInst = test_adder()
     simInst.config_sim(trace=True, tracebackup=False)
     simInst.run_sim(timesteps, quiet=0)
+
 
 simulate(2000)
