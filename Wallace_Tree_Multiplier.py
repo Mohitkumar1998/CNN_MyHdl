@@ -11,9 +11,9 @@ def WallaceTreeMultiplier(a, b, mult16, clk):
     def multiplier_16():
         sl = [Signal(intbv(0)[1:]) for i in range(16)]
 
+        # pre-processing unit to better process negative inputs and handle all unsavoury error
+        # due to no sign bit extension.
         s_b_req = a(7) ^ b(7)
-        # PARTIAL PRODUCTS : developing a memory containing the partial products
-        # all partial products are independent so can be implemented using comba_ctional logic
         a_c = [Signal(intbv(0)[1:]) for i in range(8)]
         b_c = [Signal(intbv(0)[1:]) for i in range(8)]
         a_c_r = [Signal(intbv(0)[1:]) for i in range(8)]
@@ -113,6 +113,8 @@ def WallaceTreeMultiplier(a, b, mult16, clk):
             for i in range(8):
                 b_c_r[i] = b(i)
 
+        # PARTIAL PRODUCTS : developing a memory containing the partial products
+        # all partial products are independent so can be implemented using combational logic
         partial_products = [[Signal(intbv(0)[1:]) for i in range(8)] for j in range(8)]
         for i in range(8):
             for j in range(8):
@@ -314,43 +316,49 @@ def WallaceTreeMultiplier(a, b, mult16, clk):
 
         sl[6] = sum_stage_6
 
-        p0, p1, p2, p3, p4, p5, p6, p7 = [Signal(bool(0)) for i in range(8)]
-        g0, g1, g2, g3, g4, g5, g6, g7 = [Signal(bool(0)) for i in range(8)]
-        c1, c2, c3, c4, c5, c6, c7 = [Signal(bool(0)) for i in range(7)]
+        # stage 7 : carry look ahead adder for propagate region additions
+        p0 = sum_stage_4[2] ^ carry_stage_4[1]
+        sl[7] = p0 ^ carry_stage_6
+        g0 = sum_stage_4[2] and carry_stage_4[1]
 
-        sl[7] = sum_stage_4[2] ^ carry_stage_4[1] ^ carry_stage_6
-        carry_stage_7 = (sum_stage_4[2] and carry_stage_4[1]) or (sum_stage_4[2] and carry_stage_6) or (
-                carry_stage_6 and carry_stage_4[1])
+        c1 = g0 or (p0 and carry_stage_6)
+        p1 = sum_stage_5[1] ^ Signal(intbv(0)[1:])
+        sl[8] = p1 ^ c1
+        g1 = sum_stage_5[1] and Signal(intbv(0)[1:])
 
-        sl[8] = sum_stage_5[1] ^ carry_stage_7
-        carry_stage_8 = sum_stage_5[1] and carry_stage_7
+        c2 = g1 or (p1 and c1)
+        p2 = sum_stage_5[2] ^ carry_stage_5[1]
+        sl[9] = p2 ^ c2
+        g2 = sum_stage_5[2] and carry_stage_5[1]
 
-        sl[9] = sum_stage_5[2] ^ carry_stage_5[1] ^ carry_stage_8
-        carry_stage_9 = (sum_stage_5[2] and carry_stage_5[1]) or (carry_stage_5[1] and carry_stage_8) or (
-                carry_stage_8 and sum_stage_5[2])
+        c3 = g2 or (p2 and c2)
+        p3 = sum_stage_4[4] ^ carry_stage_5[2]
+        sl[10] = p3 ^ c3
+        g3 = sum_stage_4[4] and carry_stage_5[2]
 
-        sl[10] = sum_stage_4[4] ^ carry_stage_5[2] ^ carry_stage_9
-        carry_stage_10 = (sum_stage_4[4] and carry_stage_5[2]) or (carry_stage_5[2] and carry_stage_9) or (
-                sum_stage_4[4] and carry_stage_9)
+        c4 = g3 or (p3 and c3)
+        p4 = sum_stage_4[5] ^ carry_stage_4[4]
+        sl[11] = p4 ^ c4
+        g4 = sum_stage_4[5] and carry_stage_4[4]
 
-        sl[11] = sum_stage_4[5] ^ carry_stage_4[4] ^ carry_stage_10
-        carry_stage_11 = (sum_stage_4[5] and carry_stage_4[4]) or (carry_stage_4[4] and carry_stage_10) or (
-                sum_stage_4[5] and carry_stage_10)
+        c5 = g4 or (p4 and c4)
+        p5 = sum_stage_3[7] ^ carry_stage_4[5]
+        sl[12] = p5 ^ c5
+        g5 = sum_stage_3[7] and carry_stage_4[5]
 
-        sl[12] = sum_stage_3[7] ^ carry_stage_4[5] ^ carry_stage_11
-        carry_stage_12 = (sum_stage_3[7] and carry_stage_4[5]) or (carry_stage_4[5] and carry_stage_11) or (
-                sum_stage_3[7] and carry_stage_11)
+        c6 = g5 or (p5 and c5)
+        p6 = sum_stage_2[10] ^ carry_stage_3[7]
+        sl[13] = p6 ^ c6
+        g6 = sum_stage_2[10] and carry_stage_3[7]
 
-        sl[13] = sum_stage_2[10] ^ carry_stage_3[7] ^ carry_stage_12
-        carry_stage_13 = (sum_stage_2[10] and carry_stage_3[7]) or (carry_stage_3[7] and carry_stage_12) or (
-                sum_stage_2[10] and carry_stage_12)
+        c7 = g6 or (p6 and c6)
+        p7 = partial_products[7][7] ^ carry_stage_2[10]
+        sl[14] = p7 ^ c7
+        g7 = partial_products[7][7] and carry_stage_2[10]
 
-        sl[14] = partial_products[7][7] ^ carry_stage_2[10] ^ carry_stage_13
+        sl[15] = g7 or (p7 and c7)
 
-        sl[15] = (partial_products[7][7] and carry_stage_2[10]) and (carry_stage_2[10] and carry_stage_13) or (
-                partial_products[7][7] and carry_stage_13)
-
-        # post processing unit to handle out of 8 bit bound scenarios and limit the output
+        # post-processing unit to handle out of 8 bit bound scenarios and limit the output
         isGreater = Signal(bool(0))
         isGreater = (sl[15] or sl[14] or sl[13] or sl[12] or sl[11] or sl[10] or sl[9] or sl[8] or (sl[7] and (sl[6] or sl[5] or sl[4] or sl[3] or sl[2] or sl[1] or sl[0])))
 
