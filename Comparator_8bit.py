@@ -61,7 +61,7 @@ def test_comparator():
 
 def simulate(timesteps):
     simInst = test_comparator()
-    simInst.config_sim(trace=False, tracebackup=False)
+    simInst.config_sim(trace=True, tracebackup=False)
     simInst.run_sim(timesteps, quiet=0)
 
 
